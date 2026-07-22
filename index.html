@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Ian Vadim Cortes Campos">
+    <title>Conceptos y Fundamentos de VLANs en Redes CISCO</title>
+    <style>
+        /* ==========================================================================
+           VARIABLES Y RESET
+           ========================================================================== */
+        :root {
+            --primary: #7209b7;
+            --secondary: #3a0ca3;
+            --accent: #4cc9f0;
+            --highlight: #f72585;
+            --bg-dark: #0a0814;
+            --text-light: #f8f9fa;
+            --text-muted: #a0aec0;
+            --glass-bg: rgba(255, 255, 255, 0.04);
+            --glass-border: rgba(255, 255, 255, 0.12);
+            --glass-hover: rgba(255, 255, 255, 0.08);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-light);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ==========================================================================
+           FONDO PARALLAX ANIMADO
+           ========================================================================== */
+        .parallax-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 120%;
+            z-index: -1;
+            pointer-events: none;
+            background:
+                radial-gradient(circle at 15% 25%, rgba(247, 37, 133, 0.22) 0%, transparent 45%),
+                radial-gradient(circle at 85% 55%, rgba(114, 9, 183, 0.28) 0%, transparent 45%),
+                radial-gradient(circle at 50% 85%, rgba(76, 201, 240, 0.18) 0%, transparent 50%);
+            will-change: transform;
+        }
+
+        /* Grid decorativo de fondo */
+        .grid-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* Barra de progreso superior */
+        .progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            z-index: 1000;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--highlight), var(--primary), var(--accent));
+            width: 0%;
+            transition: width 0.1s ease-out;
+        }
+
+        /* ==========================================================================
+           HEADER / HERO SECTION
+           ========================================================================== */
+        header {
+            min-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .hero-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            border-radius: 24px;
+            padding: 3.5rem 2.5rem;
+            max-width: 920px;
+            width: 100%;
+            animation: fadeIn 1.2s ease-out;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.4rem 1.2rem;
+            background: rgba(247, 37, 133, 0.15);
+            border: 1px solid var(--highlight);
+            color: var(--accent);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 1.5rem;
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 5vw, 3.8rem);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff 0%, #d8b4fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .author-box {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--glass-border);
+            font-size: 1.1rem;
+            color: var(--text-muted);
+        }
+
+        .author-name {
+            color: var(--accent);
+            font-weight: 700;
+        }
+
+        /* ==========================================================================
+           ESTRUCTURA CONTENIDO
+           ========================================================================== */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        section {
+            margin-bottom: 4rem;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 2.5rem;
+            box-shadow: var(--glass-shadow);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(247, 37, 133, 0.35);
+            transform: translateY(-4px);
+        }
+
+        h2 {
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            color: var(--text-light);
+            margin: 1.8rem 0 1rem 0;
+        }
+
+        p {
+            color: #d1d5db;
+            margin-bottom: 1.2rem;
+            font-size: 1.05rem;
+        }
+
+        ul,
+        ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #d1d5db;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* ==========================================================================
+           COMPONENTES ESPECÍFICOS (Visualizador de Etiquetado 802.1Q, Tablas, Callouts)
+           ========================================================================== */
+        .tag-visualizer {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 2rem 0;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 1.2rem;
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .tag-field {
+            flex: 1 1 calc(13% - 8px);
+            min-width: 95px;
+            background: rgba(114, 9, 183, 0.2);
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 0.8rem 0.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .tag-field.highlighted {
+            background: rgba(247, 37, 133, 0.25);
+            border-color: var(--highlight);
+            flex-grow: 1.5;
+        }
+
+        .tag-field:hover {
+            background: rgba(76, 201, 240, 0.3);
+            border-color: var(--accent);
+            transform: scale(1.03);
+        }
+
+        .tag-title {
+            font-weight: bold;
+            font-size: 0.85rem;
+            color: #fff;
+            display: block;
+        }
+
+        .tag-bytes {
+            font-size: 0.75rem;
+            color: var(--accent);
+            margin-top: 4px;
+            display: block;
+        }
+
+        /* Estilos de tablas Glassmorphic */
+        .table-container {
+            overflow-x: auto;
+            margin: 1.5rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        th {
+            background: rgba(247, 37, 133, 0.2);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Cajas destacadas (Callouts) */
+        .callout {
+            background: rgba(114, 9, 183, 0.1);
+            border-left: 4px solid var(--highlight);
+            padding: 1.2rem;
+            border-radius: 0 12px 12px 0;
+            margin: 1.5rem 0;
+        }
+
+        .callout-title {
+            font-weight: bold;
+            color: var(--highlight);
+            margin-bottom: 0.4rem;
+        }
+
+        /* GRID CARDS PARA TIPOS DE VLAN */
+        .grid-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.2rem;
+            margin: 2rem 0;
+        }
+
+        .card-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .card-item:hover {
+            border-color: var(--accent);
+            background: rgba(255, 255, 255, 0.06);
+            transform: translateY(-3px);
+        }
+
+        .card-item h4 {
+            color: var(--accent);
+            font-size: 1.15rem;
+            margin-bottom: 0.6rem;
+        }
+
+        /* ==========================================================================
+           FOOTER
+           ========================================================================== */
+        footer {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background: rgba(0, 0, 0, 0.5);
+            border-top: 1px solid var(--glass-border);
+            margin-top: 4rem;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .hero-card {
+                padding: 2rem 1.5rem;
+            }
+
+            .glass-panel {
+                padding: 1.5rem;
+            }
+
+            .tag-field {
+                flex: 1 1 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="parallax-bg" id="parallax"></div>
+    <div class="grid-overlay"></div>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <!-- HERO SECTION -->
+    <header>
+        <div class="hero-card">
+            <span class="badge">Redes CISCO • CCNA 3-4</span>
+            <h1>Arquitectura y Conceptos de VLANs (IEEE 802.1Q)</h1>
+            <p style="color: var(--text-muted); font-size: 1.2rem;">
+                Un desglose profundo de la segmentación lógica, etiquetado de tramas, tipos de VLAN y enlaces troncales
+                en conmutación Cisco.
+            </p>
+            <div class="author-box">
+                Publicación elaborada por <span class="author-name">Ian Vadim Cortes Campos</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="container">
+
+        <!-- SECCIÓN: MÓDULO 8 - CONCEPTOS DE VLAN -->
+        <section id="modulo-8-vlan">
+            <div class="glass-panel">
+                <span class="badge" style="background: rgba(114, 9, 183, 0.25); border-color: var(--primary);">Módulo 8
+                    • CCNA 3-4</span>
+                <h2>8.1 Conceptos de VLAN (págs. 187 - 196)</h2>
+
+                <p>
+                    Una <strong>VLAN (Virtual Local Area Network)</strong> es una subred lógica independiente creada
+                    dentro de una infraestructura física conmutada. Permite a los administradores de red agrupar
+                    dispositivos por departamento, función o tipo de tráfico, independientemente de su ubicación física
+                    en el edificio o campus.
+                </p>
+
+                <div class="callout">
+                    <div class="callout-title">Ventajas Principales de la Segmentación mediante VLANs:</div>
+                    <ul>
+                        <li><strong>Reducción de Dominios de Difusión:</strong> Divide los broadcasts de Capa 2 en
+                            bloques más pequeños, evitando el colapso del ancho de banda.</li>
+                        <li><strong>Seguridad Mejorada:</strong> Aísla información sensible (Finanzas, RRHH) impidiendo
+                            que hosts no autorizados intercepten tráfico de otras subredes.</li>
+                        <li><strong>Reducción de Costos:</strong> Optimiza el uso de la infraestructura existente sin
+                            requerir switches físicos independientes por área.</li>
+                        <li><strong>Mayor Rendimiento y Eficiencia:</strong> Reduce el tráfico innecesario en los
+                            enlaces de acceso y acelera el procesamiento del switch.</li>
+                        <li><strong>Gestión de Proyectos y Equipos Simplificada:</strong> Facilita la movilidad
+                            geográfica de usuarios manteniendo sus políticas de red asociadas.</li>
+                    </ul>
+                </div>
+
+                <h3>Tipos de VLANs en Redes Cisco</h3>
+                <p>
+                    En la arquitectura de conmutación Cisco, las VLANs desempeñan funciones específicas según el tipo de
+                    tráfico que transportan:
+                </p>
+
+                <div class="grid-cards">
+                    <div class="card-item">
+                        <h4>VLAN de Datos (Data VLAN)</h4>
+                        <p>Diseñada exclusivamente para transportar tráfico generado por usuarios (navegación web,
+                            correo electrónico, archivos). También llamada VLAN de usuario.</p>
+                    </div>
+
+                    <div class="card-item">
+                        <h4>VLAN Predeterminada (Default VLAN)</h4>
+                        <p>Es la <strong>VLAN 1</strong>. Inicialmente, todos los puertos del switch pertenecen a esta
+                            VLAN. No se puede eliminar ni renombrar.</p>
+                    </div>
+
+                    <div class="card-item">
+                        <h4>VLAN Nativa (Native VLAN)</h4>
+                        <p>Utilizada en enlaces troncales (Trunks) 802.1Q para transportar el tráfico que ingresa sin
+                            etiqueta (untagged). Por defecto es la VLAN 1, aunque se recomienda cambiarla por seguridad.
+                        </p>
+                    </div>
+
+                    <div class="card-item">
+                        <h4>VLAN de Administración (Management VLAN)</h4>
+                        <p>VLAN configurada con una interfaz SVI (Switch Virtual Interface) e IP para permitir el acceso
+                            remoto al switch mediante SSH/Telnet y SNMP.</p>
+                    </div>
+
+                    <div class="card-item">
+                        <h4>VLAN de Voz (Voice VLAN)</h4>
+                        <p>Requiere ancho de banda reservado, priorización por Calidad de Servicio (QoS), retraso menor
+                            a 150 ms y tolerancia cero a pérdidas para telefonía IP.</p>
+                    </div>
+                </div>
+
+                <h3>Tráficos y Enlaces Troncales (Trunk Links)</h3>
+                <p>
+                    Un <strong>enlace troncal (Trunk)</strong> es un enlace punto a punto configurado entre dos
+                    switches, o entre un switch y un router, que permite transportar el tráfico de múltiples VLANs a
+                    través de un mismo cable físico.
+                </p>
+
+                <h3>Etiquetado de Tramas Ethernet (IEEE 802.1Q)</h3>
+                <p>
+                    Para distinguir a qué VLAN pertenece cada trama cuando atraviesa un enlace troncal, el estándar
+                    <strong>IEEE 802.1Q</strong> inserta un encabezado de <strong>4 bytes</strong> dentro de la trama
+                    Ethernet II original (entre el campo MAC Origen y EtherType/Longitud).
+                </p>
+
+                <!-- Visualizador de Etiquetado 802.1Q -->
+                <div class="tag-visualizer">
+                    <div class="tag-field">
+                        <span class="tag-title">MAC Destino</span>
+                        <span class="tag-bytes">6 Bytes</span>
+                    </div>
+                    <div class="tag-field">
+                        <span class="tag-title">MAC Origen</span>
+                        <span class="tag-bytes">6 Bytes</span>
+                    </div>
+                    <!-- Campo Etiqueta 802.1Q Destacado -->
+                    <div class="tag-field highlighted">
+                        <span class="tag-title">Tag 802.1Q</span>
+                        <span class="tag-bytes">4 Bytes (Insertado)</span>
+                    </div>
+                    <div class="tag-field">
+                        <span class="tag-title">EtherType Orig.</span>
+                        <span class="tag-bytes">2 Bytes</span>
+                    </div>
+                    <div class="tag-field" style="flex-grow: 2;">
+                        <span class="tag-title">Datos / Payload</span>
+                        <span class="tag-bytes">46-1500 Bytes</span>
+                    </div>
+                    <div class="tag-field">
+                        <span class="tag-title">FCS</span>
+                        <span class="tag-bytes">4 Bytes</span>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Subcampo de la Etiqueta 802.1Q</th>
+                                <th>Tamaño</th>
+                                <th>Descripción y Función</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>TPID (Tag Protocol Identifier)</strong></td>
+                                <td>16 bits (2 Bytes)</td>
+                                <td>Establecido en el valor hexadecimal <code>0x8100</code> para identificar que la
+                                    trama cuenta con etiquetado 802.1Q.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Priority (PCP / QoS)</strong></td>
+                                <td>3 bits</td>
+                                <td>Define el nivel de prioridad IEEE 802.1p para Calidad de Servicio (QoS), crucial
+                                    para la VLAN de voz.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>CFI / DEI</strong></td>
+                                <td>1 bit</td>
+                                <td>Canonical Format Indicator. Garantiza compatibilidad con redes Token Ring y marca
+                                    tramas elegibles para descarte en congestión.</td>
+                            </tr>
+                            <tr>
+                                <td><strong>VLAN ID (VID)</strong></td>
+                                <td>12 bits</td>
+                                <td>Identificador numérico de la VLAN. Soporta hasta <strong>4096 VLANs</strong>
+                                    (2<sup>12</sup> = 4096, Rango de 0 a 4095).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Rangos de Identificación de VLANs en Switches Cisco</h3>
+                <p>El estándar de Catalyst Cisco divide el rango de VLAN IDs en dos categorías principales:</p>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Rango</th>
+                                <th>ID de VLAN</th>
+                                <th>Características de Configuración</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Rango Normal</strong></td>
+                                <td>1 a 1005</td>
+                                <td>
+                                    Usado en pequeñas y medianas empresas.<br>
+                                    • IDs 1002 a 1005 reservados para Token Ring y FDDI.<br>
+                                    • Las configuraciones se guardan en la memoria flash en el archivo
+                                    <code>vlan.dat</code>.<br>
+                                    • Soporta VTP (VLAN Trunking Protocol).
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Rango Extendido</strong></td>
+                                <td>1006 a 4094</td>
+                                <td>
+                                    Diseñado para proveedores de servicios (ISPs) y grandes corporativos.<br>
+                                    • Se guardan directamente en el archivo de configuración activa
+                                    (<code>running-config</code>).<br>
+                                    • Requiere VTP en modo transparente o VTP v3.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer>
+        <p>© 2026 Publicación Académica de Redes - Basado en la currícula Cisco CCNA 3-4</p>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 0.5rem;">
+            Autor: <strong style="color: var(--accent);">Ian Vadim Cortes Campos</strong>
+        </p>
+    </footer>
+
+    <!-- LÓGICA DE INTERACTIVIDAD & PARALLAX -->
+    <script>
+        // Efecto Parallax Suave al hacer Scroll
+        const parallaxBg = document.getElementById('parallax');
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            parallaxBg.style.transform = `translateY(${scrolled * 0.28}px)`;
+        });
+
+        // Barra de progreso de lectura
+        window.addEventListener('scroll', () => {
+            const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
+            const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+            const scrolled = (winScroll / height) * 100;
+            document.getElementById('progressBar').style.width = scrolled + '%';
+        });
+
+        // Animación suave al revelar paneles al scrollear
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.glass-panel').forEach(panel => {
+            panel.style.opacity = '0';
+            panel.style.transform = 'translateY(30px)';
+            panel.style.transition = 'all 0.8s ease-out';
+            observer.observe(panel);
+        });
+    </script>
+</body>
+
+</html>
